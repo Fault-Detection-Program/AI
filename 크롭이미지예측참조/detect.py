@@ -6,7 +6,7 @@ import torch
 import config
 import logging
 import traceback
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from shutil import copy2
 from datetime import datetime
 from dataset import get_transforms
@@ -56,15 +56,17 @@ class Detect:
 
         # 이미지 파일 리스트 : ['MFR01328AE;2408221189A_R_OK.png', 'MFR01327AE;2409110702A_R_NG.png', ....]
         img_files = [f for f in os.listdir(self.input_dir) if f.endswith(('.jpg', '.png')) and f not in img_list]
-        imagelist, filenamelist = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
+        imagelist, filenamelist, croplist = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
         # img_files = [f for f in filenamelist if f not in img_list] 
 
+        font_size = 15
+        font = ImageFont.truetype("arial.ttf", font_size)
         # 라벨 우선순위 정의
         label_priority = {'NG': 1, 'PASS': 2, 'OK': 3}
 
         # 파일명 기준 라벨 그룹화
         label_map = defaultdict(list)
-        for img, filename in zip(imagelist, filenamelist):
+        for img, filename, crop_coord in zip(imagelist, filenamelist, croplist):
             try:
                 # 각 바코드 이미지당 2개의 이미지 모두 예측 후 우선순위에 따른 예측 판단 진행되도록 함
                 # 이미지 전처리
@@ -76,7 +78,7 @@ class Detect:
 
                 img_processed = self.tfms(img_processed).unsqueeze(0)
                 img_processed = img_processed.to(device)
-
+                
                 # 이미지 예측
                 with torch.no_grad():
                     logits = model(img_processed)
@@ -91,10 +93,10 @@ class Detect:
 
                 # 그룹화: 파일명 기준 라벨 추가
                 original_filename = filename.rsplit('_', 1)[0]  # 'data_file_1.png' -> 'data_file'
-                label_map[original_filename].append(label)
-
+                label_map[original_filename].append({"coords": crop_coord, "label": label})#(label)
+        
             except Exception as e:
-                logging.info(f'{img_file} : {e}')
+                logging.info(f'{img} : {e}')
 
         ok_dir = os.path.join(self.output_dir, 'OK')
         pass_dir = os.path.join(self.output_dir, 'PASS')
@@ -102,25 +104,53 @@ class Detect:
 
         # 우선순위에 따라 최종 라벨 결정 및 파일 복사
         for filename, labels in label_map.items():
-            
-            # 최종 라벨 결정
-            final_label = min(labels, key=lambda x: label_priority[x])
-            
-            # 복사 대상 디렉토리 선택
-            if final_label == 'OK':
-                target_dir = ok_dir
-            elif final_label == 'PASS':
-                target_dir = pass_dir
-            else:  # final_label == 'NG'
-                target_dir = ng_dir
-
-            # 원본 파일 경로
+            # 원본 파일 경로 찾기
             img_file = next((file for file in img_files if filename in file), None)
             if img_file:
                 img_path = os.path.join(input_dir, img_file)
-                copy2(img_path, target_dir)
-            else:
-                return
+
+                # 이미지 열기
+                with Image.open(img_path) as img:
+                    draw = ImageDraw.Draw(img)
+                    
+                    # 좌표를 하나씩 그리기
+                    for label_entry in labels:
+                        coords = label_entry['coords']  # (y, x, h, w)
+                        label = label_entry['label']
+                        
+                        if label in ['NG', 'PASS']:
+                            # 좌표 변환
+                            y, x, h, w = coords
+                            
+                            # 박스 그리기
+                            box_color = "red" if label == 'NG' else "green"
+                            draw.rectangle((x, y, x+w, y+h), outline = box_color, width = 15)
+
+                            text_pos = (x+70, y+50)
+                            #font = ImageFont.load_default() #폰트 사이즈 변경이 안됨
+                            font_path = "C:/Windows/Fonts/arial.ttf"  # TTF 폰트 파일 경로
+                            font_size = 100
+                            font = ImageFont.truetype(font_path, font_size)
+                            
+                            draw.text(text_pos, label, fill = box_color, font=font)
+                    
+                    # 최종 라벨 결정
+                    final_label_entry = min(labels, key=lambda x: label_priority[x['label']])
+                    final_label = final_label_entry['label']
+                    
+                    # 복사 대상 디렉토리 선택
+                    if final_label == 'OK': 
+                        target_dir = ok_dir 
+                    elif final_label == 'PASS':
+                        target_dir = pass_dir
+                    else:  # final_label == 'NG'
+                        target_dir = ng_dir
+                    
+                    # 저장 경로
+                    target_path = os.path.join(target_dir, img_file)
+                    
+                    # 표시된 이미지 저장
+                    img.save(target_path)
 
 if __name__ == '__main__':
     import sys

@@ -17,6 +17,7 @@ def crop_and_save(image, crop_coords, filename_prefix, index):
 def image_crop(image_path_folder):
 	test_images =[]
 	filename_list = []
+	crop_coord_listall = []
 
 	# 지원되는 이미지 파일 확장자
 	supported_extensions = ('.png', '.jpg', '.jpeg', '.bmp')
@@ -44,5 +45,6 @@ def image_crop(image_path_folder):
 			pil_image, output_filename = crop_and_save(image, crop_coords, filename2, i)
 			test_images.append(pil_image)
 			filename_list.append(output_filename)
+			crop_coord_listall.append(crop_coords)
 
-	return test_images, filename_list
+	return test_images, filename_list, crop_coord_listall
