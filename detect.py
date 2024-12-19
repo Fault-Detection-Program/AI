@@ -21,9 +21,6 @@ class Detect:
     def __init__(self, input_dir, output_dir):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.ok_dir = os.path.join(self.output_dir, 'OK')
-        self.pass_dir = os.path.join(self.output_dir, 'PASS')
-        self.ng_dir = os.path.join(self.output_dir, 'NG')
 
         self.model_name = MODEL['MODEL_NAME']
         self.weights_dir = PATH['WEIGHTS_PATH']
@@ -95,7 +92,7 @@ class Detect:
             except Exception as e:
                 logging.info(f'{img} : {e}')
 
-        img_indication(self, img_files, label_map) # 이미지 표시
+        img_indication(img_files, label_map, self.input_dir, self.output_dir) # 이미지 표시
 
 if __name__ == '__main__':
     import sys

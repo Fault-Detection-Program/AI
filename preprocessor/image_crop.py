@@ -41,7 +41,7 @@ def image_crop(image_path_folder):
 		# 좌표와 작업 한번에 처리
 		crop_coords_list = [(y, x, h, w), (y2, x2, h2, w2)]
 		for i, crop_coords in enumerate(crop_coords_list):
-			filename2 = filename.replace(".png", "")
+			filename2 = os.path.splitext(filename)[0] #filename.replace(".png", "")
 			pil_image, output_filename = crop_and_save(image, crop_coords, filename2, i)
 			test_images.append(pil_image)
 			filename_list.append(output_filename)
