@@ -1,24 +1,29 @@
 import os
-import sys
 import json
 import torch
 import config
 import logging
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont, ImageFile
 from shutil import copy2
 from datetime import datetime
 from dataset import get_transforms
 from efficientnet_pytorch.model import EfficientNet
 from preprocessor.image_preprocess import auto_adjustments, opencv_processing
+from preprocessor.image_visualization import img_indication
 from preprocessor.image_crop import image_crop
 from config import PATH, MODEL
+from collections import defaultdict
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Detect:
     def __init__(self, input_dir, output_dir):
         self.input_dir = input_dir
         self.output_dir = output_dir
+        self.ok_dir = os.path.join(self.output_dir, 'OK')
+        self.pass_dir = os.path.join(self.output_dir, 'PASS')
+        self.ng_dir = os.path.join(self.output_dir, 'NG')
 
         self.model_name = MODEL['MODEL_NAME']
         self.weights_dir = PATH['WEIGHTS_PATH']
@@ -31,7 +36,6 @@ class Detect:
         self.labels_map = json.load(open(self.labels_file))
         self.labels_map = [self.labels_map[str(i)] for i in range(len(self.labels_map))]
 
-        # 학습 모델 호출
         if device.type == 'cpu':
             model = EfficientNet.from_pretrained(self.model_name, num_classes=len(self.labels_map))
             model.load_state_dict(torch.load(self.model_weights_file, map_location=device))
@@ -46,22 +50,22 @@ class Detect:
 
         # output 경로에 존재하지 않는 이미지 리스트만 img_files 변수에 할당
         img_list = set()
-
         for sub_dir in ['OK', 'PASS', 'NG']:
             sub_path = os.path.join(self.output_dir, sub_dir)
             os.makedirs(sub_path, exist_ok=True)
 
             if os.path.exists(sub_path):
                 img_list.update(os.listdir(sub_path))
-        
-        # 이미지 파일 리스트 : ['MFR01328AE;2408221189A.png', 'MFR01327AE;2409110702A.png', ....]
-        imagelist, filenamelist = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
-        img_files = [f for f in filenamelist if f not in img_list] 
 
-        for img_file, img in zip(img_files, imagelist):
+        # 이미지 파일 리스트 : ['MFR01328AE;2408221189A_R_OK.png', 'MFR01327AE;2409110702A_R_NG.png', ....]
+        img_files = [f for f in os.listdir(self.input_dir) if f.endswith(('.jpg', '.png')) and f not in img_list]
+        imagelist, filenamelist, croplist = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
+
+        # 파일명 기준 라벨 그룹화
+        label_map = defaultdict(list)
+        for img, filename, crop_coord in zip(imagelist, filenamelist, croplist):
             try:
-                img_path = os.path.join(self.input_dir, img_file)
-
+                # 각 바코드 이미지당 2개의 이미지 모두 예측 후 우선순위에 따른 예측 판단 진행되도록 함
                 # 이미지 전처리
                 img_processed = auto_adjustments(img) # 자동 밝기, 대비, 선명도 조정
                 img_processed = opencv_processing(img_processed) # 노이즈 제거
@@ -71,7 +75,7 @@ class Detect:
 
                 img_processed = self.tfms(img_processed).unsqueeze(0)
                 img_processed = img_processed.to(device)
-
+                
                 # 이미지 예측
                 with torch.no_grad():
                     logits = model(img_processed)
@@ -80,41 +84,34 @@ class Detect:
                     label = self.labels_map[pred]
                 
                 logging.info('-' * 100)
-                logging.info(f'Image File : {img_file}')
+                logging.info(f'Image File : {filename}')
                 logging.info('{:<75} ({:.2f}%)'.format(label, prob*100))
                 logging.info('-' * 100)
 
-                ok_dir = os.path.join(self.output_dir, 'OK')
-                pass_dir = os.path.join(self.output_dir, 'PASS')
-                ng_dir = os.path.join(self.output_dir, 'NG')
-
-                # 예측 결과 저장
-                if label == 'OK':
-                    copy2(img_path, ok_dir)
-                elif label == 'PASS':
-                    copy2(img_path, pass_dir)
-                elif label == 'NG':
-                    copy2(img_path, ng_dir)
-
+                # 그룹화: 파일명 기준 라벨 추가
+                original_filename = filename.rsplit('_', 1)[0]  # 'data_file_1.png' -> 'data_file'
+                label_map[original_filename].append({"coords": crop_coord, "label": label})#(label)
+        
             except Exception as e:
-                logging.info(f'{img_file} : {e}')
+                logging.info(f'{img} : {e}')
+
+        img_indication(self, img_files, label_map) # 이미지 표시
 
 if __name__ == '__main__':
+    import sys
     try:
         path = sys.argv[1]
         config.set_config(path)
         input_dir = sys.argv[2]
         output_dir = sys.argv[3]
     
-        if not os.path.exists('log'):
-            os.makedirs('log')
+        log_path = PATH['Log']
 
-        logging.basicConfig(filename=f'log/detect_{datetime.now().strftime("%Y-%m-%d")}.log', 
+        logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log', 
                             filemode='a',
                             level=logging.INFO,
                             format='%(asctime)s - %(message)s')
-        logging.info(f'Using device : {device}')
-        
+    
         detect = Detect(input_dir=input_dir, output_dir=output_dir)
         detect.run_detect()
 
