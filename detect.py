@@ -3,14 +3,14 @@ import json
 import torch
 import config
 import logging
-from PIL import Image, ImageDraw, ImageFont, ImageFile
-from shutil import copy2
+import sys
+from PIL import ImageFile
 from datetime import datetime
 from dataset import get_transforms
 from efficientnet_pytorch.model import EfficientNet
-from preprocessor.image_preprocess import auto_adjustments, opencv_processing
-from preprocessor.image_visualization import img_indication
-from preprocessor.image_crop import image_crop
+from preprocessor import auto_adjustments, opencv_processing
+from utils.annotation import image_annotation
+from utils.crop import image_crop
 from config import PATH, MODEL
 from collections import defaultdict
 
@@ -47,6 +47,7 @@ class Detect:
 
         # output 경로에 존재하지 않는 이미지 리스트만 img_files 변수에 할당
         img_list = set()
+
         for sub_dir in ['OK', 'PASS', 'NG']:
             sub_path = os.path.join(self.output_dir, sub_dir)
             os.makedirs(sub_path, exist_ok=True)
@@ -56,11 +57,11 @@ class Detect:
 
         # 이미지 파일 리스트 : ['MFR01328AE;2408221189A_R_OK.png', 'MFR01327AE;2409110702A_R_NG.png', ....]
         img_files = [f for f in os.listdir(self.input_dir) if f.endswith(('.jpg', '.png')) and f not in img_list]
-        imagelist, filenamelist, croplist = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
+        image_list, filename_list, coord_list = image_crop(self.input_dir) # 크롭된 PIL 이미지, 파일명 호출
 
         # 파일명 기준 라벨 그룹화
         label_map = defaultdict(list)
-        for img, filename, crop_coord in zip(imagelist, filenamelist, croplist):
+        for img, filename, coord in zip(image_list, filename_list, coord_list):
             try:
                 # 각 바코드 이미지당 2개의 이미지 모두 예측 후 우선순위에 따른 예측 판단 진행되도록 함
                 # 이미지 전처리
@@ -87,32 +88,37 @@ class Detect:
 
                 # 그룹화: 파일명 기준 라벨 추가
                 original_filename = filename.rsplit('_', 1)[0]  # 'data_file_1.png' -> 'data_file'
-                label_map[original_filename].append({"coords": crop_coord, "label": label})#(label)
+                label_map[original_filename].append({"coords": coord, "label": label})
         
             except Exception as e:
-                logging.info(f'{img} : {e}')
+                logging.info(f'{filename} : {e}')
 
-        img_indication(img_files, label_map, self.input_dir, self.output_dir) # 이미지 표시
+        image_annotation(img_files, label_map, self.input_dir, self.output_dir) # 이미지 label 표시
 
 if __name__ == '__main__':
-    import sys
     try:
         path = sys.argv[1]
         config.set_config(path)
         input_dir = sys.argv[2]
         output_dir = sys.argv[3]
     
+        log_dir = os.path.join(path, "log")
+
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            
         log_path = PATH['Log']
 
-        logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log', 
+        logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
                             filemode='a',
                             level=logging.INFO,
                             format='%(asctime)s - %(message)s')
-    
+        logging.info(f'Using device : {device}')
+
         detect = Detect(input_dir=input_dir, output_dir=output_dir)
         detect.run_detect()
 
-        print("\nExecution completed successfully.")
+        print("\n Defect FPCB Detection Completed.")
 
     except Exception as e:
         print(f"Error: {e}")
