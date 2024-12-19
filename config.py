@@ -2,8 +2,11 @@ import os
 
 # Path
 PATH = {
+    'INPUT_PATH' : None,
+    'OUTPUT_PATH' : None,
     'WEIGHTS_PATH' : None,
-    'LABELS' : None
+    'LABELS' : None,
+    'Log' : None
 }
 
 # Model Parameter
@@ -17,12 +20,15 @@ MODEL = {
     'RESUME_EPOCH' : None
 }
 
-def set_config(path):
+def set_config(path_val):
     global PATH
     global MODEL
 
-    PATH['WEIGHTS_PATH'] = f'{path}/weights'
-    PATH['LABELS'] = f'{path}/labels_map.txt'
+    PATH['INPUT_PATH'] = f'{path_val}/input'
+    PATH['OUTPUT_PATH'] = f'{path_val}/output'
+    PATH['WEIGHTS_PATH'] = f'{path_val}/weights'
+    PATH['LABELS'] = f'{path_val}/labels_map.txt'
+    PATH['Log'] = f'{path_val}/log'
 
     MODEL['MODEL_NAME'] = 'efficientnet-b3'
     MODEL['NUM_CLASSES'] = 3
