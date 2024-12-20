@@ -1,6 +1,7 @@
 # Path
 PATH = {
     'DATASET_PATH' : '/dataset',
+    'IMAGE_PATH' : '/dataset/processed',
     'INPUT_PATH' : '/input',
     'OUTPUT_PATH' : '/output',
     'WEIGHTS_PATH' : '/weights',
