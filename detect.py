@@ -1,7 +1,6 @@
 import os
 import json
 import torch
-import config
 import logging
 import sys
 from PIL import ImageFile
@@ -23,7 +22,7 @@ class Detect:
         self.input_dir = input_dir
         self.output_dir = output_dir
 
-        self.model_name = self.base_dir + MODEL['MODEL_NAME']
+        self.model_name = MODEL['MODEL_NAME']
         self.weights_dir = self.base_dir + PATH['WEIGHTS_PATH']
         self.labels_file = self.base_dir + PATH['LABELS']
         self.weights_file = os.path.join(self.weights_dir, self.model_name + '.pth')
