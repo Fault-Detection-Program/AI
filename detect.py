@@ -100,7 +100,7 @@ if __name__ == '__main__':
         input_dir = sys.argv[2]
         output_dir = sys.argv[3]
             
-        log_path = base_dir + PATH['Log']
+        log_path = base_dir + PATH['LOG']
 
         logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
                             filemode='a',

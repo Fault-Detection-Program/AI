@@ -5,7 +5,7 @@ PATH = {
     'OUTPUT_PATH' : '/output',
     'WEIGHTS_PATH' : '/weights',
     'LABELS' : '/labels_map.txt',
-    'LOG' : '/log'
+    'Log' : '/log'
 }
 
 # Model Parameter
