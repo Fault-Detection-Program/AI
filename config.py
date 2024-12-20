@@ -1,39 +1,20 @@
-import os
-
 # Path
 PATH = {
-    'INPUT_PATH' : None,
-    'OUTPUT_PATH' : None,
-    'WEIGHTS_PATH' : None,
-    'LABELS' : None,
-    'Log' : None
+    'DATASET_PATH' : '/dataset',
+    'INPUT_PATH' : '/input',
+    'OUTPUT_PATH' : '/output',
+    'WEIGHTS_PATH' : '/weights',
+    'LABELS' : '/labels_map.txt',
+    'LOG' : '/log'
 }
 
 # Model Parameter
 MODEL = {
-    'MODEL_NAME' : None,
-    'NUM_CLASSES' : None,
-    'LR' : None,
-    'MOMENTUM' : None,
-    'NUM_EPOCHS' : None,
-    'BATCH_SIZE' : None,
-    'RESUME_EPOCH' : None
+    'MODEL_NAME' : 'efficientnet-b3',
+    'NUM_CLASSES' : 3,
+    'LR' : 0.01,
+    'MOMENTUM' : 0.9,
+    'NUM_EPOCHS' : 1,
+    'BATCH_SIZE' : 2,
+    'RESUME_EPOCH' : 0
 }
-
-def set_config(path_val):
-    global PATH
-    global MODEL
-
-    PATH['INPUT_PATH'] = f'{path_val}/input'
-    PATH['OUTPUT_PATH'] = f'{path_val}/output'
-    PATH['WEIGHTS_PATH'] = f'{path_val}/weights'
-    PATH['LABELS'] = f'{path_val}/labels_map.txt'
-    PATH['Log'] = f'{path_val}/log'
-
-    MODEL['MODEL_NAME'] = 'efficientnet-b3'
-    MODEL['NUM_CLASSES'] = 3
-    MODEL['LR'] = 0.01
-    MODEL['MOMENTUM'] = 0.9
-    MODEL['NUM_EPOCHS'] = 1
-    MODEL['BATCH_SIZE'] = 2
-    MODEL['RESUME_EPOCH'] = 0
