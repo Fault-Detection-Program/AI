@@ -18,16 +18,16 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Detect:
-    def __init__(self, input_dir, output_dir):
+    def __init__(self, base_dir, input_dir, output_dir):
+        self.base_dir = base_dir
         self.input_dir = input_dir
         self.output_dir = output_dir
 
-        self.model_name = MODEL['MODEL_NAME']
-        self.weights_dir = PATH['WEIGHTS_PATH']
-        self.labels_file = PATH['LABELS']
-        self.model_weights_file = os.path.join(self.weights_dir, self.model_name + '.pth')
-        self.image_size = EfficientNet.get_image_size(self.model_name)
-        self.tfms = get_transforms(self.image_size)
+        self.model_name = self.base_dir + MODEL['MODEL_NAME']
+        self.weights_dir = self.base_dir + PATH['WEIGHTS_PATH']
+        self.labels_file = self.base_dir + PATH['LABELS']
+        self.weights_file = os.path.join(self.weights_dir, self.model_name + '.pth')
+        self.tfms = get_transforms(EfficientNet.get_image_size(self.model_name))
 
     def run_detect(self):
         self.labels_map = json.load(open(self.labels_file))
@@ -35,11 +35,11 @@ class Detect:
 
         if device.type == 'cpu':
             model = EfficientNet.from_pretrained(self.model_name, num_classes=len(self.labels_map))
-            model.load_state_dict(torch.load(self.model_weights_file, map_location=device))
+            model.load_state_dict(torch.load(self.weights_file, map_location=device))
             
         else:
             model = EfficientNet.from_pretrained(self.model_name, 
-                                                 weights_path=self.model_weights_file,
+                                                 weights_path=self.weights_file,
                                                  num_classes=len(self.labels_map))
 
         model.to(device)
@@ -97,17 +97,11 @@ class Detect:
 
 if __name__ == '__main__':
     try:
-        path = sys.argv[1]
-        config.set_config(path)
+        base_dir = sys.argv[1]
         input_dir = sys.argv[2]
         output_dir = sys.argv[3]
-    
-        log_dir = os.path.join(path, "log")
-
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
             
-        log_path = PATH['Log']
+        log_path = base_dir + PATH['Log']
 
         logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
                             filemode='a',
@@ -115,7 +109,7 @@ if __name__ == '__main__':
                             format='%(asctime)s - %(message)s')
         logging.info(f'Using device : {device}')
 
-        detect = Detect(input_dir=input_dir, output_dir=output_dir)
+        detect = Detect(base_dir=base_dir, input_dir=input_dir, output_dir=output_dir)
         detect.run_detect()
 
         print("\n Defect FPCB Detection Completed.")
