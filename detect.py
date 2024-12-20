@@ -104,36 +104,23 @@ class Detect:
         image_annotation(img_files, label_map, self.input_dir, self.output_dir)
 
 if __name__ == '__main__':
-    base_dir = os.getcwd()
-    input_dir = base_dir + PATH['INPUT_PATH']
-    output_dir = base_dir + PATH['OUTPUT_PATH']
-    log_path = base_dir + PATH['LOG']
+    try:
+        base_dir = sys.argv[1]
+        input_dir = sys.argv[2]
+        output_dir = sys.argv[3]
+        log_path = base_dir + PATH['LOG']
 
-    logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
-                        filemode='a',
-                        level=logging.INFO,
-                        format='%(asctime)s - %(message)s')
-    logging.info(f'Using device : {device}')
-    
-    detect = Detect(base_dir=base_dir, input_dir=input_dir, output_dir=output_dir)
-    detect.run_detect()
-    # try:
-    #     base_dir = sys.argv[1]
-    #     input_dir = sys.argv[2]
-    #     output_dir = sys.argv[3]
-    #     log_path = base_dir + PATH['LOG']
+        logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
+                            filemode='a',
+                            level=logging.INFO,
+                            format='%(asctime)s - %(message)s')
+        logging.info(f'Using device : {device}')
 
-    #     logging.basicConfig(filename= f'{log_path}/detect_{datetime.now().strftime("%Y-%m-%d")}.log',
-    #                         filemode='a',
-    #                         level=logging.INFO,
-    #                         format='%(asctime)s - %(message)s')
-    #     logging.info(f'Using device : {device}')
+        detect = Detect(base_dir=base_dir, input_dir=input_dir, output_dir=output_dir)
+        detect.run_detect()
 
-    #     detect = Detect(base_dir=base_dir, input_dir=input_dir, output_dir=output_dir)
-    #     detect.run_detect()
+        print("\n Defect FPCB Detection Completed.")
 
-    #     print("\n Defect FPCB Detection Completed.")
-
-    # except Exception as e:
-    #     print(f"Error: {e}")
-    #     sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
