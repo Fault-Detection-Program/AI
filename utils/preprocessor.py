@@ -1,8 +1,7 @@
 import os
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 # 선명도 판단 함수 (Laplacian Variance)
 def calculate_sharpness(img):
@@ -75,27 +74,7 @@ def opencv_processing(img):
 
     return Image.fromarray(img)#gamma_corrected_img
 
-def image_pre(folder_path):
-    # 폴더 내의 모든 파일을 순차적으로 처리
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.jpg') or filename.endswith('.png'):  # 원하는 이미지 포맷으로 필터링
-            image_path = os.path.join(folder_path, filename)
-            
-            # 이미지 열기
-            img = Image.open(image_path)
-            
-            # 자동 밝기, 대비, 선명도 조정
-            img_processed = auto_adjustments(img)
-            
-            # OpenCV 기반 추가 처리
-            img_opencv_adjusted = opencv_processing(img_processed)
-            
-            # 이미지를 그레이스케일로 변환 (여기서 'L' 모드로 변환)
-            img_grayscale = img_opencv_adjusted.convert('L') 
-            
-            return img_grayscale
-
-def img_train_pre(input_dir, output_dir, folder):
+def train_preprocessor(input_dir, output_dir, folder):
     # 입력 디렉토리의 모든 하위 폴더 및 파일 탐색
     input_dir = input_dir+'/'+folder
     base_folder_name = os.path.basename(input_dir)

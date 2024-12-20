@@ -13,9 +13,9 @@ def crop_and_save(image, crop_coords, only_filename, index):
 
 # 이미지 크롭시 이미지 사이에 일정한 간격이 필요함 - 고정 측정 카메라가 있으면 좋을것으로 판단
 def image_crop(image_path_folder):
-	image_list =[]
-	filename_list = []
-	coord_list = []
+	images = []
+	filenames = []
+	coords = []
 
 	# 지원되는 이미지 파일 확장자
 	image_extensions = ('.png', '.jpg', '.jpeg', '.bmp')
@@ -40,8 +40,8 @@ def image_crop(image_path_folder):
 			only_filename = os.path.splitext(filename)[0]
 			pil_image, output_filename = crop_and_save(image, crop_coords, only_filename, i)
 
-			image_list.append(pil_image)
-			filename_list.append(output_filename)
-			coord_list.append(crop_coords)
+			images.append(pil_image)
+			filenames.append(output_filename)
+			coords.append(crop_coords)
 
-	return image_list, filename_list, coord_list
+	return images, filenames, coords

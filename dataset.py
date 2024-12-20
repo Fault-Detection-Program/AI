@@ -10,7 +10,7 @@ def get_transforms(image_size):
                                ])
     return tfms
 
-def DataLoader(data_dir, batch_size, input_size, set_name, shuffle):
+def load_dataset(data_dir, batch_size, input_size, set_name, shuffle):
     data_transforms = {
         'train': transforms.Compose([
             transforms.Resize(input_size),
